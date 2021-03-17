@@ -27,7 +27,7 @@ const Repos = () => {
         return total;
     }, {});
 
-    // MOST POPULAR LANGUAGES
+    // MOST POPULAR LANGUAGES ---
     const mostUsedLanguages = Object.values(languages)
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
