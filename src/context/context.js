@@ -15,8 +15,91 @@ const GithubProvider = ({ children }) => {
     const [repos, setRepos] = useState(mockRepos);
     const [followers, setFollowers] = useState(mockFollowers);
 
+    // request loading
+    const [isLoading, setIsLoading] = useState(false);
+    const [requests, setRequests] = useState(0);
+    const [error, setError] = useState({ show: false, msg: "" });
+
+    // check rate
+    const checkRequests = () => {
+        axios(`${rootUrl}/rate_limit`)
+            .then(({ data }) => {
+                const {
+                    rate: { remaining },
+                } = data;
+                setRequests(remaining);
+
+                if (remaining === 0) {
+                    toggleError(
+                        true,
+                        "Sorry, you have used all your requests :("
+                    );
+                }
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    };
+
+    // error handle
+    const toggleError = (show = false, msg = "") => {
+        setError({ show, msg });
+    };
+
+    // SEARCH USER
+    const searchGithubUser = async (user) => {
+        toggleError();
+        setIsLoading(true);
+
+        const response = await axios(`${rootUrl}/users/${user}`).catch((err) =>
+            console.log(err)
+        );
+
+        if (response) {
+            setGithubUser(response.data);
+
+            const { login, followers_url, repos_url } = response.data;
+            console.log(response.data);
+            await Promise.allSettled([
+                axios(`${repos_url}?per_page=100`),
+                axios(`${followers_url}?per_page=100`),
+            ])
+                .then((results) => {
+                    const [repos, followers] = results;
+                    const status = "fulfilled";
+
+                    if (repos.status === status) {
+                        setRepos(repos.value.data);
+                    }
+                    if (followers.status === status) {
+                        setFollowers(followers.value.data);
+                    }
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+        } else {
+            toggleError(true, "There is no user with that username");
+        }
+
+        checkRequests();
+        setIsLoading(false);
+    };
+
+    useEffect(checkRequests, []);
+
     return (
-        <GithubContext.Provider value={{ githubUser, repos, followers }}>
+        <GithubContext.Provider
+            value={{
+                githubUser,
+                repos,
+                followers,
+                requests,
+                error,
+                searchGithubUser,
+                isLoading,
+            }}
+        >
             {children}
         </GithubContext.Provider>
     );

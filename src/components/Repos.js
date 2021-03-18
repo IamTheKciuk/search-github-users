@@ -65,7 +65,6 @@ const Repos = () => {
     stars = Object.values(stars)
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
-    console.log(forks);
 
     forks = Object.values(forks)
         .sort((a, b) => b.value - a.value)
